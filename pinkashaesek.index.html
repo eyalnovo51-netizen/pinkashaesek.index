@@ -1,0 +1,1332 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+<title>פנקס העסק — תיוק חשבוניות</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="פנקס העסק">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%232B2620'/%3E%3Ctext x='50' y='68' font-size='55' text-anchor='middle' fill='%23AD3B2C'%3E%F0%9F%93%92%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Suez+One&family=Assistant:wght@400;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/4.1.1/tesseract.min.js"></script>
+<style>
+  :root{
+    --paper:#E9DCC3;
+    --paper-dark:#DCC9A3;
+    --paper-card:#F3E9D4;
+    --ink:#2B2620;
+    --ink-soft:#6B6152;
+    --stamp-red:#AD3B2C;
+    --ledger-green:#4C6B4F;
+    --mustard:#C08F2E;
+    --line:#c9b795;
+    --shadow: 0 3px 8px rgba(43,38,32,0.18);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(circle at 20% 10%, rgba(255,255,255,0.25), transparent 40%),
+      repeating-linear-gradient(0deg, rgba(0,0,0,0.015) 0px, rgba(0,0,0,0.015) 1px, transparent 1px, transparent 3px),
+      var(--paper);
+    color:var(--ink);
+    font-family:'Assistant', sans-serif;
+    min-height:100vh;
+    padding-bottom:110px;
+  }
+  h1,h2,h3,.stamp-font{font-family:'Suez One', serif;}
+  .wrap{max-width:640px;margin:0 auto;padding:18px 16px 0;}
+
+  header.top{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:10px 4px 16px;
+    border-bottom:3px double var(--ink);
+    margin-bottom:16px;
+  }
+  header.top h1{
+    font-size:26px;margin:0;color:var(--stamp-red);
+    letter-spacing:0.5px;
+    transform:rotate(-1.5deg);
+  }
+  header.top .sub{font-size:12px;color:var(--ink-soft);margin-top:2px;}
+
+  .month-nav{
+    display:flex;align-items:center;justify-content:center;gap:14px;
+    margin-bottom:18px;
+  }
+  .month-nav button{
+    background:none;border:2px solid var(--ink);border-radius:50%;
+    width:34px;height:34px;font-size:16px;cursor:pointer;color:var(--ink);
+    display:flex;align-items:center;justify-content:center;
+  }
+  .month-nav button:active{background:var(--ink);color:var(--paper);}
+  .month-label{font-family:'Suez One',serif;font-size:20px;min-width:140px;text-align:center;}
+
+  .totals-board{
+    background:var(--ink);color:var(--paper);
+    border-radius:14px;
+    padding:16px 18px;
+    margin-bottom:20px;
+    box-shadow:var(--shadow);
+    position:relative;
+    overflow:hidden;
+  }
+  .totals-board::before{
+    content:"";position:absolute;inset:0;
+    background:repeating-linear-gradient(45deg, rgba(255,255,255,0.02) 0 2px, transparent 2px 8px);
+  }
+  .totals-board .grand{
+    display:flex;align-items:baseline;justify-content:space-between;
+    position:relative;z-index:1;
+  }
+  .totals-board .grand .label{font-size:14px;color:var(--paper-dark);}
+  .totals-board .grand .value{font-family:'Suez One',serif;font-size:34px;color:#E8B84B;}
+  .totals-board .count{font-size:12px;color:var(--paper-dark);margin-top:4px;position:relative;z-index:1;}
+
+  .empty-state{
+    text-align:center;padding:50px 20px;color:var(--ink-soft);
+  }
+  .empty-state .stamp-font{font-size:20px;color:var(--ink);margin-bottom:6px;}
+
+  details.folder{
+    background:var(--paper-card);
+    border:1px solid var(--line);
+    border-radius:10px 10px 4px 4px;
+    margin-bottom:14px;
+    box-shadow:var(--shadow);
+    overflow:hidden;
+  }
+  details.folder summary{
+    list-style:none;cursor:pointer;
+    padding:12px 14px;
+    display:flex;align-items:center;justify-content:space-between;
+    background:linear-gradient(180deg, var(--mustard) 0%, #b47f26 100%);
+    color:#2b2110;
+  }
+  details.folder summary::-webkit-details-marker{display:none;}
+  .badge-review{background:#f1ddd3;color:var(--stamp-red);border-radius:6px;padding:1px 6px;font-size:11px;font-weight:700;}
+  .folder-name{font-family:'Suez One',serif;font-size:17px;}
+  .folder-meta{display:flex;align-items:center;gap:10px;}
+  .folder-sub{font-size:14px;font-weight:700;}
+  .chev{transition:transform .2s;font-size:12px;}
+  details[open] .chev{transform:rotate(180deg);}
+
+  .invoice-list{padding:10px 12px 14px;display:flex;flex-direction:column;gap:10px;}
+  .inv-card{
+    display:flex;gap:10px;align-items:center;
+    background:var(--paper);
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:8px;
+    position:relative;
+  }
+  .inv-card::before{
+    content:"";position:absolute;top:-6px;right:14px;width:26px;height:12px;
+    background:rgba(0,0,0,0.06);border-radius:2px;transform:rotate(-3deg);
+  }
+  .inv-thumb{
+    width:56px;height:56px;border-radius:6px;object-fit:cover;
+    border:1px solid var(--line);flex-shrink:0;background:#fff;
+  }
+  .inv-info{flex:1;min-width:0;}
+  .inv-date{font-size:12px;color:var(--ink-soft);}
+  .inv-amount{font-family:'Suez One',serif;font-size:17px;color:var(--ledger-green);}
+  .inv-del{
+    background:none;border:none;color:var(--stamp-red);font-size:18px;
+    cursor:pointer;padding:6px;
+  }
+  .inv-confirm{
+    display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--ink-soft);
+  }
+  .inv-confirm .confirm-yes{
+    background:var(--stamp-red);color:#fff;border:none;border-radius:6px;
+    padding:6px 10px;font-size:12.5px;cursor:pointer;
+  }
+  .inv-confirm .confirm-no{
+    background:#ddd0ac;color:var(--ink);border:none;border-radius:6px;
+    padding:6px 10px;font-size:12.5px;cursor:pointer;
+  }
+
+  .fab{
+    position:fixed;bottom:22px;left:50%;transform:translateX(-50%);
+    background:var(--stamp-red);color:#fff;border:none;
+    border-radius:999px;padding:14px 26px;
+    font-family:'Suez One',serif;font-size:16px;
+    box-shadow:0 6px 16px rgba(173,59,44,0.45);
+    display:flex;align-items:center;gap:8px;
+    cursor:pointer;z-index:20;
+  }
+  .fab:active{transform:translateX(-50%) scale(0.96);}
+
+  .close-month-btn{
+    width:100%;padding:13px;margin-top:6px;margin-bottom:24px;
+    background:var(--ledger-green);color:#fff;border:none;
+    border-radius:10px;font-family:'Suez One',serif;font-size:16px;
+    cursor:pointer;letter-spacing:0.5px;
+  }
+  .close-month-btn:disabled{opacity:0.4;}
+
+  /* modal */
+  .modal-backdrop{
+    position:fixed;inset:0;background:rgba(20,16,10,0.55);
+    display:none;align-items:flex-end;justify-content:center;z-index:50;
+  }
+  .modal-backdrop.open{display:flex;}
+  .modal{
+    background:var(--paper);width:100%;max-width:640px;
+    border-radius:18px 18px 0 0;
+    padding:20px 18px calc(20px + env(safe-area-inset-bottom));
+    max-height:88vh;overflow-y:auto;
+    box-shadow:0 -8px 24px rgba(0,0,0,0.3);
+  }
+  .modal h2{margin:0 0 14px;font-size:20px;color:var(--stamp-red);}
+  .field{margin-bottom:14px;}
+  .field label{display:block;font-size:13px;color:var(--ink-soft);margin-bottom:5px;}
+  .field input, .field select{
+    width:100%;padding:11px 12px;border:1.5px solid var(--line);
+    border-radius:8px;font-size:16px;font-family:'Assistant',sans-serif;
+    background:#fff;color:var(--ink);
+  }
+  .field input:focus, .field select:focus{outline:2px solid var(--mustard);border-color:var(--mustard);}
+  .photo-row{display:flex;gap:10px;margin-bottom:14px;}
+  .photo-btn{
+    flex:1;padding:14px;border:2px dashed var(--ink-soft);border-radius:10px;
+    background:transparent;text-align:center;font-size:14px;color:var(--ink-soft);
+    cursor:pointer;
+  }
+  .preview-wrap{margin-bottom:14px;text-align:center;}
+  .preview-wrap img{max-width:100%;max-height:220px;border-radius:8px;border:1px solid var(--line);}
+  .modal-actions{display:flex;gap:10px;margin-top:6px;}
+  .modal-actions button{flex:1;padding:13px;border:none;border-radius:9px;font-size:15px;font-family:'Suez One',serif;cursor:pointer;}
+  .btn-cancel{background:#ddd0ac;color:var(--ink);}
+  .btn-save{background:var(--stamp-red);color:#fff;}
+  .btn-save:disabled{opacity:0.5;}
+  .scan-toggle{display:flex;gap:8px;margin:-6px 0 14px;justify-content:center;}
+  .scan-toggle button{padding:8px 14px;border-radius:999px;border:1.5px solid var(--ink);background:transparent;color:var(--ink);font-size:13px;font-family:'Assistant',sans-serif;font-weight:600;cursor:pointer;}
+  .scan-toggle button.active{background:var(--ink);color:var(--paper);}
+  .cam-overlay{position:fixed;inset:0;background:#000;z-index:100;display:none;flex-direction:column;}
+  .cam-overlay.open{display:flex;}
+  .cam-overlay video{flex:1;width:100%;object-fit:cover;min-height:0;}
+  .cam-guide{position:absolute;inset:8% 6% 22% 6%;border:3px dashed rgba(255,255,255,0.75);border-radius:10px;pointer-events:none;}
+  .cam-hint{position:absolute;top:calc(env(safe-area-inset-top,0px) + 14px);left:0;right:0;text-align:center;color:#fff;font-size:14px;text-shadow:0 1px 4px #000;}
+  .cam-bar{display:flex;align-items:center;justify-content:space-around;padding:18px 10px calc(18px + env(safe-area-inset-bottom,0px));background:#000;}
+  .cam-shutter{width:72px;height:72px;border-radius:50%;border:5px solid #fff;background:var(--stamp-red);cursor:pointer;}
+  .cam-close{background:none;border:none;color:#fff;font-size:15px;cursor:pointer;padding:10px;}
+  .hint{font-size:12px;color:var(--ink-soft);margin-top:-8px;margin-bottom:14px;}
+
+  .chip-row{
+    display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;
+  }
+  .chip-row .chip{
+    padding:10px 16px;border-radius:999px;border:1.5px solid var(--ink);
+    background:var(--paper-card);color:var(--ink);font-size:14px;
+    cursor:pointer;font-family:'Assistant',sans-serif;font-weight:600;
+  }
+  .chip-row .chip.active{
+    background:var(--stamp-red);border-color:var(--stamp-red);color:#fff;
+  }
+  .chip-row .chip-new{
+    border-style:dashed;color:var(--ink-soft);
+  }
+  .no-suppliers-yet{font-size:12px;color:var(--ink-soft);margin-bottom:12px;}
+
+  .ocr-status{
+    display:flex;align-items:center;gap:6px;
+    font-size:13px;margin:-8px 0 14px;padding:8px 10px;border-radius:7px;
+  }
+  .ocr-status.running{background:#e9e0c8;color:var(--ink-soft);}
+  .ocr-status.found{background:#dfe9e0;color:var(--ledger-green);}
+  .ocr-status.unsure{background:#f1ddd3;color:var(--stamp-red);}
+  .ocr-status .spin{
+    width:12px;height:12px;border-radius:50%;
+    border:2px solid var(--ink-soft);border-top-color:transparent;
+    animation:spin 0.8s linear infinite;
+  }
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  .toast{
+    position:fixed;bottom:100px;left:50%;transform:translateX(-50%);
+    background:var(--ink);color:var(--paper);padding:10px 18px;border-radius:8px;
+    font-size:14px;z-index:60;opacity:0;transition:opacity .25s;pointer-events:none;
+  }
+  .toast.show{opacity:1;}
+
+  .loading{
+    display:flex;align-items:center;justify-content:center;padding:40px;color:var(--ink-soft);
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div id="debugBanner" style="display:none;background:#7a1f14;color:#fff;font-size:12px;padding:10px 12px;border-radius:8px;margin-bottom:14px;white-space:pre-wrap;direction:ltr;text-align:left;"></div>
+  <header class="top">
+    <div>
+      <h1>פנקס העסק</h1>
+      <div class="sub">תיוק חשבוניות וקבלות לפי ספק</div>
+    </div>
+    <button id="settingsBtn" aria-label="הגדרות" style="background:none;border:1.5px solid var(--ink);border-radius:50%;width:38px;height:38px;font-size:17px;cursor:pointer;">⚙️</button>
+  </header>
+
+  <div class="month-nav">
+    <button id="prevMonth" aria-label="חודש קודם">‹</button>
+    <div class="month-label" id="monthLabel">—</div>
+    <button id="nextMonth" aria-label="חודש הבא">›</button>
+  </div>
+
+  <div class="totals-board">
+    <div class="grand">
+      <span class="label">סה"כ לחודש</span>
+      <span class="value" id="grandTotal">₪0</span>
+    </div>
+    <div class="count" id="grandCount">0 חשבוניות</div>
+  </div>
+
+  <div id="content">
+    <div class="loading">טוען...</div>
+  </div>
+
+  <button class="close-month-btn" id="closeMonthBtn">🔒 סגירת חודש — ייצוא להנהלת חשבונות</button>
+
+  <div style="display:flex;gap:10px;margin-bottom:20px;">
+    <button id="backupExportBtn" style="flex:1;padding:11px;border:1.5px solid var(--ink);border-radius:9px;background:transparent;color:var(--ink);font-size:13px;cursor:pointer;">⬇️ גיבוי לכל הנתונים</button>
+    <button id="backupImportBtn" style="flex:1;padding:11px;border:1.5px solid var(--ink);border-radius:9px;background:transparent;color:var(--ink);font-size:13px;cursor:pointer;">⬆️ שחזור מגיבוי</button>
+  </div>
+  <input type="file" id="backupImportInput" accept="application/json,.json" style="display:none;">
+</div>
+
+<button class="fab" id="openAddBtn">📷 חשבונית חדשה</button>
+
+<div class="modal-backdrop" id="modalBackdrop">
+  <div class="modal">
+    <h2 id="modalTitle">הוספת חשבונית / קבלה</h2>
+    <div id="queueHint" style="display:none;font-size:13px;color:var(--ink-soft);margin:-6px 0 14px;"></div>
+
+    <div class="photo-row">
+      <button class="photo-btn" id="captureBtn">📷<br>צילום</button>
+      <button class="photo-btn" id="uploadBtn">🖼️<br>מהגלריה</button>
+    </div>
+    <input type="file" id="cameraInput" accept="image/*" style="display:none;">
+    <input type="file" id="galleryInput" accept="image/*" multiple style="display:none;">
+
+    <div class="preview-wrap" id="previewWrap" style="display:none;">
+      <img id="previewImg" alt="תצוגה מקדימה">
+    </div>
+    <div class="scan-toggle" id="scanToggle" style="display:none;">
+      <button type="button" data-mode="scan">🧾 סרוק</button>
+      <button type="button" data-mode="color">🎨 מקורי (צבע)</button>
+    </div>
+
+    <div class="ocr-status" id="ocrStatus" style="display:none;"></div>
+
+    <label style="display:block;font-size:13px;color:var(--ink-soft);margin-bottom:6px;">ספק (לחיצה אחת — בלי הקלדה)</label>
+    <div class="chip-row" id="supplierChips"></div>
+
+    <div class="field">
+      <label for="supplierInput">או שם ספק חדש / לא ברור</label>
+      <input type="text" id="supplierInput" list="supplierList" placeholder="הקלידו רק אם הספק לא ברשימה למעלה" autocomplete="off">
+      <datalist id="supplierList"></datalist>
+    </div>
+    <div class="hint">המערכת מנסה לזהות את הספק מהתמונה אוטומטית. אם היא לא בטוחה — פשוט לחצו על הספק מהרשימה, או הקלידו אם הוא חדש.</div>
+
+    <div class="field">
+      <label for="amountInput">סכום (₪)</label>
+      <input type="number" id="amountInput" inputmode="decimal" placeholder="0.00" step="0.01">
+    </div>
+
+    <div class="field">
+      <label for="dateInput">תאריך</label>
+      <input type="date" id="dateInput">
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-cancel" id="cancelBtn">ביטול</button>
+      <button class="btn-save" id="saveBtn" disabled>שמור בתיק</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="settingsBackdrop">
+  <div class="modal">
+    <h2>הגדרות</h2>
+    <div class="field">
+      <label for="bookkeeperEmailInput">אימייל הנהלת חשבונות</label>
+      <input type="email" id="bookkeeperEmailInput" placeholder="example@accounting.co.il">
+    </div>
+    <div class="hint">הכתובת הזו תוזן אוטומטית כנמען כשתשלח את קובץ סגירת החודש במייל.</div>
+    <div class="modal-actions">
+      <button class="btn-cancel" id="settingsCancelBtn">ביטול</button>
+      <button class="btn-save" id="settingsSaveBtn">שמור</button>
+    </div>
+  </div>
+</div>
+
+<div class="cam-overlay" id="camOverlay">
+  <video id="camVideo" playsinline autoplay muted></video>
+  <div class="cam-guide"></div>
+  <div class="cam-hint">מקמו את החשבונית בתוך המסגרת, על רקע כהה אם אפשר</div>
+  <div class="cam-bar">
+    <button type="button" class="cam-close" id="camClose">ביטול</button>
+    <button type="button" class="cam-shutter" id="camShutter" aria-label="צלם"></button>
+    <span style="width:60px"></span>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const HEBREW_MONTHS = ["ינואר","פברואר","מרץ","אפריל","מאי","יוני","יולי","אוגוסט","ספטמבר","אוקטובר","נובמבר","דצמבר"];
+
+let currentMonth = new Date().toISOString().slice(0,7); // YYYY-MM
+let index = []; // full invoice index across all months: {id, month, supplier, amount, date, thumb}
+let fullImages = {}; // id -> dataURL, in-memory cache so nothing is lost even if a DB write fails
+let pendingPhoto = null; // {thumb, full}
+let userEditedSupplier = false;
+let photoQueue = [];
+let editingId = null; // remaining files when several were picked from the gallery at once
+
+// --- Local storage layer (IndexedDB, kept entirely in the user's own browser) ---
+const IDB_NAME = 'pinkasHaesekDB';
+const IDB_STORE = 'kv';
+
+function idbOpen(){
+  return new Promise((resolve, reject)=>{
+    const req = indexedDB.open(IDB_NAME, 1);
+    req.onupgradeneeded = () => {
+      if(!req.result.objectStoreNames.contains(IDB_STORE)) req.result.createObjectStore(IDB_STORE);
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function idbGet(key){
+  const db = await idbOpen();
+  return new Promise((resolve, reject)=>{
+    const tx = db.transaction(IDB_STORE, 'readonly');
+    const req = tx.objectStore(IDB_STORE).get(key);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function idbSet(key, value){
+  const db = await idbOpen();
+  return new Promise((resolve, reject)=>{
+    const tx = db.transaction(IDB_STORE, 'readwrite');
+    tx.objectStore(IDB_STORE).put(value, key);
+    tx.oncomplete = () => resolve(true);
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+async function idbDelete(key){
+  const db = await idbOpen();
+  return new Promise((resolve, reject)=>{
+    const tx = db.transaction(IDB_STORE, 'readwrite');
+    tx.objectStore(IDB_STORE).delete(key);
+    tx.oncomplete = () => resolve(true);
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+function fmtMoney(n){
+  return '₪' + n.toLocaleString('he-IL', {minimumFractionDigits:0, maximumFractionDigits:2});
+}
+
+function monthLabel(ym){
+  const [y,m] = ym.split('-').map(Number);
+  return HEBREW_MONTHS[m-1] + ' ' + y;
+}
+
+let settings = {bookkeeperEmail: ''};
+
+async function loadSettings(){
+  try{
+    const val = await idbGet('settings');
+    if(val) settings = {...settings, ...JSON.parse(val)};
+  }catch(e){ console.error('loadSettings failed:', e); }
+}
+
+async function saveSettings(){
+  await idbSet('settings', JSON.stringify(settings));
+}
+
+async function loadIndex(){
+  try{
+    const val = await idbGet('invoices-index');
+    index = val ? JSON.parse(val) : [];
+  }catch(e){
+    console.error('loadIndex failed:', e);
+    index = [];
+  }
+}
+
+async function saveIndex(){
+  await idbSet('invoices-index', JSON.stringify(index));
+}
+
+function uid(){
+  return 'inv_' + Date.now() + '_' + Math.random().toString(36).slice(2,8);
+}
+
+function compressImage(file, maxWidth, quality){
+  return new Promise((resolve, reject)=>{
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        let w = img.width, h = img.height;
+        if(w > maxWidth){
+          h = Math.round(h * (maxWidth / w));
+          w = maxWidth;
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(0,0,w,h);
+        ctx.drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.onerror = reject;
+      img.src = e.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+async function compressUntilSafe(file){
+  const attempts = [[1300,0.72],[1000,0.6],[800,0.5],[600,0.4],[450,0.3]];
+  for(const [w,q] of attempts){
+    const dataUrl = await compressImage(file, w, q);
+    if(dataUrl.length < 3500000) return dataUrl; // safety margin under the 5MB per-value limit
+  }
+  return compressImage(file, 400, 0.28);
+}
+
+function readFileAsDataURL(file){
+  return new Promise((resolve, reject)=>{
+    const r = new FileReader();
+    r.onload = () => resolve(r.result);
+    r.onerror = () => reject(r.error || new Error('file read failed'));
+    r.readAsDataURL(file);
+  });
+}
+
+// ---------- Document scanning ----------
+let scanState = null; // {color: canvas, scan: canvas, mode}
+
+async function loadImageFromFile(file){
+  // 1) createImageBitmap: no URLs involved, handles HEIC on iOS
+  if(window.createImageBitmap){
+    try{ return await createImageBitmap(file); }catch(e){ console.warn('createImageBitmap failed', e); }
+  }
+  // 2) FileReader -> data URL -> Image (works where blob: URLs are blocked)
+  try{
+    const dataUrl = await readFileAsDataURL(file);
+    return await new Promise((resolve, reject)=>{
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => reject(new Error('image decode failed (data url)'));
+      img.src = dataUrl;
+    });
+  }catch(e){ console.warn('data-url load failed', e); }
+  // 3) blob URL as last resort
+  return await new Promise((resolve, reject)=>{
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => { URL.revokeObjectURL(url); resolve(img); };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('image decode failed (blob url)')); };
+    img.src = url;
+  });
+}
+
+function drawToCanvas(img, maxDim){
+  let w = img.naturalWidth || img.width, h = img.naturalHeight || img.height;
+  const k = Math.min(1, maxDim / Math.max(w, h));
+  w = Math.round(w * k); h = Math.round(h * k);
+  const c = document.createElement('canvas');
+  c.width = w; c.height = h;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#fff'; ctx.fillRect(0,0,w,h);
+  ctx.drawImage(img, 0, 0, w, h);
+  return c;
+}
+
+// Finds the bright "paper" region and crops to it (skips if result looks unreliable)
+function autoCropDocument(src){
+  const sw = 360, k = sw / src.width, sh = Math.round(src.height * k);
+  const t = document.createElement('canvas'); t.width = sw; t.height = sh;
+  const tctx = t.getContext('2d'); tctx.drawImage(src, 0, 0, sw, sh);
+  const d = tctx.getImageData(0,0,sw,sh).data;
+  const gray = new Uint8Array(sw*sh); const hist = new Array(256).fill(0);
+  for(let i=0,j=0;i<d.length;i+=4,j++){ const g = (d[i]*0.299 + d[i+1]*0.587 + d[i+2]*0.114)|0; gray[j]=g; hist[g]++; }
+  // Otsu
+  const total = sw*sh; let sum=0; for(let i=0;i<256;i++) sum+=i*hist[i];
+  let sumB=0, wB=0, best=0, thr=128;
+  for(let i=0;i<256;i++){ wB+=hist[i]; if(!wB) continue; const wF=total-wB; if(!wF) break;
+    sumB+=i*hist[i]; const mB=sumB/wB, mF=(sum-sumB)/wF; const v=wB*wF*(mB-mF)*(mB-mF);
+    if(v>best){best=v;thr=i;} }
+  let minX=sw,minY=sh,maxX=0,maxY=0,count=0;
+  const rowCnt=new Uint16Array(sh), colCnt=new Uint16Array(sw);
+  for(let y=0;y<sh;y++) for(let x=0;x<sw;x++){ if(gray[y*sw+x]>thr){ rowCnt[y]++; colCnt[x]++; count++; } }
+  // ignore sparse rows/cols (noise) when finding bounds
+  const rMin = sw*0.12, cMin = sh*0.12;
+  for(let y=0;y<sh;y++) if(rowCnt[y]>rMin){ if(y<minY)minY=y; if(y>maxY)maxY=y; }
+  for(let x=0;x<sw;x++) if(colCnt[x]>cMin){ if(x<minX)minX=x; if(x>maxX)maxX=x; }
+  const areaFrac = ((maxX-minX)*(maxY-minY)) / (sw*sh);
+  const brightFrac = count/total;
+  if(maxX<=minX || maxY<=minY || areaFrac<0.25 || areaFrac>0.97 || brightFrac<0.15) return src;
+  const mx = Math.round(sw*0.012), my = Math.round(sh*0.012);
+  minX=Math.max(0,minX+mx); minY=Math.max(0,minY+my); maxX=Math.min(sw-1,maxX-mx); maxY=Math.min(sh-1,maxY-my);
+  const cx=Math.round(minX/k), cy=Math.round(minY/k), cw=Math.round((maxX-minX)/k), ch=Math.round((maxY-minY)/k);
+  const out=document.createElement('canvas'); out.width=cw; out.height=ch;
+  out.getContext('2d').drawImage(src,cx,cy,cw,ch,0,0,cw,ch);
+  return out;
+}
+
+// Flattens lighting/shadows and makes text crisp (scanner look)
+function scanEnhance(src){
+  const w=src.width, h=src.height;
+  const small=document.createElement('canvas');
+  small.width=Math.max(8,Math.round(w/24)); small.height=Math.max(8,Math.round(h/24));
+  const sctx=small.getContext('2d'); sctx.imageSmoothingQuality='high'; sctx.drawImage(src,0,0,small.width,small.height);
+  const bgc=document.createElement('canvas'); bgc.width=w; bgc.height=h;
+  const bctx=bgc.getContext('2d'); bctx.imageSmoothingEnabled=true; bctx.imageSmoothingQuality='high';
+  bctx.drawImage(small,0,0,w,h);
+  const bg=bctx.getImageData(0,0,w,h).data;
+  const out=document.createElement('canvas'); out.width=w; out.height=h;
+  const octx=out.getContext('2d'); octx.drawImage(src,0,0);
+  const img=octx.getImageData(0,0,w,h); const d=img.data;
+  // typical paper brightness (90th percentile of the blurred background)
+  const samples=[]; for(let i=0;i<bg.length;i+=4*61){ samples.push(bg[i]*0.299+bg[i+1]*0.587+bg[i+2]*0.114); }
+  samples.sort((x,y)=>x-y);
+  const paperLum = samples[Math.floor(samples.length*0.9)] || 200;
+  const darkBg = paperLum*0.6;   // outside-the-paper background (only whitened near the borders)
+  const floorBg = paperLum*0.78; // never normalise against a background darker than this, so dense ink/logos are not washed out
+  const band = Math.round(Math.min(w,h)*0.05);
+  for(let i=0;i<d.length;i+=4){
+    const g=d[i]*0.299+d[i+1]*0.587+d[i+2]*0.114;
+    let b=bg[i]*0.299+bg[i+1]*0.587+bg[i+2]*0.114+1;
+    const px=i>>2, y=(px/w)|0, x=px-y*w;
+    const nearEdge = x<band || y<band || x>w-band || y>h-band;
+    if(nearEdge && b<darkBg){ d[i]=d[i+1]=d[i+2]=255; d[i+3]=255; continue; }
+    if(b<floorBg) b=floorBg;
+    let r=g/b; // ~1 on paper, lower on ink
+    let v=(r-0.50)/(0.92-0.50); v=v<0?0:v>1?1:v; v=v*v*(3-2*v);
+    const o=(v*255)|0; d[i]=d[i+1]=d[i+2]=o; d[i+3]=255;
+  }
+  octx.putImageData(img,0,0);
+  return out;
+}
+
+function canvasToDataURL(c, maxDim, q){
+  const k=Math.min(1, maxDim/Math.max(c.width,c.height));
+  if(k>=1) return c.toDataURL('image/jpeg', q);
+  const t=document.createElement('canvas'); t.width=Math.round(c.width*k); t.height=Math.round(c.height*k);
+  const x=t.getContext('2d'); x.imageSmoothingQuality='high'; x.drawImage(c,0,0,t.width,t.height);
+  return t.toDataURL('image/jpeg', q);
+}
+
+function applyScanMode(){
+  if(!scanState) return;
+  const c = scanState.mode==='scan' ? scanState.scan : scanState.color;
+  const full = canvasToDataURL(c, 2200, 0.88);
+  const thumb = canvasToDataURL(c, 260, 0.6);
+  pendingPhoto = {thumb, full};
+  document.getElementById('previewImg').src = full;
+  document.getElementById('previewWrap').style.display = 'block';
+  document.getElementById('scanToggle').style.display = 'flex';
+  document.querySelectorAll('#scanToggle [data-mode]').forEach(b=>{
+    b.classList.toggle('active', b.getAttribute('data-mode')===scanState.mode);
+  });
+  validateSave();
+}
+
+async function handlePhotoFile(file){
+  if(!file) return;
+
+  userEditedSupplier = false;
+  document.getElementById('supplierInput').value = '';
+  pendingPhoto = null; scanState = null;
+  document.getElementById('previewWrap').style.display = 'none';
+  document.getElementById('scanToggle').style.display = 'none';
+  validateSave();
+  renderSupplierChips();
+
+  try{
+    const statusEl = document.getElementById('ocrStatus');
+    statusEl.style.display = 'flex'; statusEl.className = 'ocr-status running';
+    statusEl.innerHTML = '<span class="spin"></span> סורק ומשפר את המסמך...';
+    await new Promise(r=>setTimeout(r,30));
+    const img = await loadImageFromFile(file);
+    const base = drawToCanvas(img, 2200);
+    const cropped = autoCropDocument(base);
+    const scanned = scanEnhance(cropped);
+    scanState = {color: cropped, scan: scanned, mode: 'scan'};
+    applyScanMode();
+    runOCR(canvasToDataURL(scanned, 1600, 0.85));
+  }catch(err){
+    console.error('scan pipeline failed, falling back to the original file:', err);
+    try{
+      const raw = await readFileAsDataURL(file);
+      pendingPhoto = {thumb: raw, full: raw};
+      document.getElementById('previewImg').src = raw;
+      document.getElementById('previewWrap').style.display = 'block';
+      showDebug('לא הצלחתי לסרוק את התמונה (אולי פורמט לא נתמך כמו HEIC) — נשמרת הגרסה המקורית, אפשר להמשיך', err);
+      validateSave();
+    }catch(err2){
+      console.error('raw file read also failed:', err2);
+      showDebug('לא הצלחתי לטעון את הקובץ שנבחר כלל', err2);
+      const st = document.getElementById('ocrStatus');
+      st.className = 'ocr-status unsure';
+      st.innerHTML = '⚠️ לא הצלחתי לטעון את התמונה. פתחו את האפליקציה ב-Safari (לא בתצוגה המקדימה של קבצים) ונסו שוב';
+      showToast('לא ניתן לטעון את התמונה (' + ((err2 && (err2.name || err2.message)) || 'שגיאה') + ')');
+    }
+  }
+}
+
+function normalizeForMatch(s){
+  return s
+    .replace(/[\u0591-\u05C7]/g, '')      // niqqud
+    .replace(/[^\p{L}\p{N}]/gu, '')       // keep letters/digits only
+    .toLowerCase();
+}
+
+function matchKnownSupplier(ocrText){
+  const known = [...new Set(index.map(i => i.supplier))];
+  if(known.length === 0) return null;
+  const normText = normalizeForMatch(ocrText);
+  if(!normText) return null;
+  const sorted = known.slice().sort((a,b) => b.length - a.length);
+  for(const name of sorted){
+    const normName = normalizeForMatch(name);
+    if(normName.length >= 2 && normText.includes(normName)) return name;
+  }
+  return null;
+}
+
+function guessSupplierName(ocrText){
+  const lines = ocrText.split('\n').map(l => l.trim()).filter(Boolean);
+  for(const line of lines.slice(0, 6)){
+    const hebrewLetters = (line.match(/[\u05D0-\u05EA]/g) || []).length;
+    const digitsOnly = /^[\d\s.,₪\-\/]+$/.test(line);
+    if(hebrewLetters >= 2 && !digitsOnly && line.length <= 40) return line;
+  }
+  return '';
+}
+
+function parseAmounts(text){
+  const clean = text.replace(/[״"”“]/g,'"');
+  const lines = clean.split('\n');
+  const numRe = /\d{1,3}(?:[,]\d{3})+(?:\.\d{1,2})?|\d+(?:[.,]\d{1,2})?/g;
+  const toNum = t => { let x=t; if(/,\d{3}/.test(x)) x=x.replace(/,/g,''); else x=x.replace(',','.'); return parseFloat(x); };
+  const keyRe = /(סה"?כ|סהכ|לתשלום|סכום\s*כולל|כולל\s*מע"?מ|total|amount\s*due|grand)/i;
+  let keyed = [];
+  lines.forEach((ln,i)=>{
+    if(keyRe.test(ln)){
+      const around = [ln, lines[i+1]||''].join(' ');
+      (around.match(numRe)||[]).forEach(t=>{ const n=toNum(t); if(n>=1 && n<1000000) keyed.push(n); });
+    }
+  });
+  if(keyed.length) return {amount: Math.max(...keyed), certain: true};
+  let all = [];
+  (clean.match(/\d{1,3}(?:,\d{3})*\.\d{2}|\d+\.\d{2}/g)||[]).forEach(t=>{ const n=toNum(t); if(n>=1 && n<1000000) all.push(n); });
+  if(all.length) return {amount: Math.max(...all), certain: false};
+  return null;
+}
+
+function parseDate(text){
+  const re = /(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{2,4})/g; let m;
+  while((m = re.exec(text))){
+    let d=+m[1], mo=+m[2], y=+m[3]; if(y<100) y+=2000;
+    if(d>=1&&d<=31&&mo>=1&&mo<=12&&y>=2020&&y<=2100) return `${y}-${String(mo).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+  }
+  return null;
+}
+
+let autoReview = false;
+
+async function runOCR(imageDataUrl){
+  const statusEl = document.getElementById('ocrStatus');
+  statusEl.style.display = 'flex';
+  statusEl.className = 'ocr-status running';
+  statusEl.innerHTML = '<span class="spin"></span> קורא ספק, סכום ותאריך מהתמונה...';
+
+  try{
+    const { data: { text } } = await Tesseract.recognize(imageDataUrl, 'heb+eng');
+    if(userEditedSupplier) return; // user already typed something themselves
+
+    const match = matchKnownSupplier(text);
+    const amt = parseAmounts(text);
+    const dt = parseDate(text);
+    const amountEl = document.getElementById('amountInput');
+    if(amt && !amountEl.value) amountEl.value = amt.amount;
+    if(dt) document.getElementById('dateInput').value = dt;
+
+    if(match){
+      document.getElementById('supplierInput').value = match;
+      validateSave();
+      renderSupplierChips();
+      if(amt && !editingId){
+        autoReview = !amt.certain;
+        statusEl.className = 'ocr-status found';
+        statusEl.innerHTML = '✓ זוהה ' + escapeHtml(match) + ' · ₪' + amt.amount + ' — מתייק אוטומטית...';
+        setTimeout(()=>{ if(pendingPhoto && document.getElementById('modalBackdrop').classList.contains('open') && !document.getElementById('saveBtn').disabled) saveInvoice(); }, 900);
+      }else{
+        statusEl.className = 'ocr-status found';
+        statusEl.innerHTML = '✓ זוהה ספק: ' + escapeHtml(match) + (amt ? '' : ' — הסכום לא זוהה, הזינו אותו ידנית');
+      }
+    }else{
+      const guess = guessSupplierName(text);
+      if(guess){
+        document.getElementById('supplierInput').value = guess;
+      }
+      validateSave();
+      statusEl.className = 'ocr-status unsure';
+      statusEl.innerHTML = '⚠️ ספק חדש/לא זוהה — אשרו את השם' + (amt ? ` (סכום שזוהה: ₪${amt.amount})` : '') + '. מהחשבונית הבאה של אותו ספק הכול יתויק אוטומטית';
+    }
+  }catch(e){
+    if(userEditedSupplier) return;
+    statusEl.className = 'ocr-status unsure';
+    statusEl.innerHTML = '⚠️ זיהוי אוטומטי נכשל — מלאו ספק וסכום ידנית';
+  }
+}
+
+function validateSave(){
+  const supplier = document.getElementById('supplierInput').value.trim();
+  const amount = document.getElementById('amountInput').value;
+  document.getElementById('saveBtn').disabled = !(pendingPhoto && supplier && amount);
+}
+
+function openModal(){
+  document.getElementById('modalBackdrop').classList.add('open');
+  document.getElementById('dateInput').value = new Date().toISOString().slice(0,10);
+  refreshSupplierList();
+  renderSupplierChips();
+  updateQueueHint();
+}
+
+function updateQueueHint(){
+  const hint = document.getElementById('queueHint');
+  if(photoQueue.length > 0){
+    hint.style.display = 'block';
+    hint.textContent = `📎 נותרו עוד ${photoQueue.length} תמונות בתור מההעלאה`;
+  }else{
+    hint.style.display = 'none';
+  }
+}
+
+function closeModal(){
+  document.getElementById('modalBackdrop').classList.remove('open');
+  document.getElementById('supplierInput').value = '';
+  document.getElementById('amountInput').value = '';
+  document.getElementById('previewWrap').style.display = 'none';
+  const statusEl = document.getElementById('ocrStatus');
+  statusEl.style.display = 'none';
+  statusEl.className = 'ocr-status';
+  statusEl.innerHTML = '';
+  userEditedSupplier = false; editingId = null; autoReview = false;
+  document.getElementById('modalTitle').textContent = 'הוספת חשבונית / קבלה';
+  pendingPhoto = null; scanState = null;
+  document.getElementById('scanToggle').style.display = 'none';
+  document.getElementById('saveBtn').disabled = true;
+}
+
+function refreshSupplierList(){
+  const names = [...new Set(index.map(i => i.supplier))].sort();
+  const dl = document.getElementById('supplierList');
+  dl.innerHTML = names.map(n => `<option value="${escapeHtml(n)}">`).join('');
+}
+
+function supplierUsage(){
+  // most recently used first, so the right chip is usually near the top
+  const order = [];
+  for(let i = index.length - 1; i >= 0; i--){
+    const name = index[i].supplier;
+    if(!order.includes(name)) order.push(name);
+  }
+  return order;
+}
+
+function renderSupplierChips(){
+  const names = supplierUsage();
+  const wrap = document.getElementById('supplierChips');
+  if(names.length === 0){
+    wrap.innerHTML = '<div class="no-suppliers-yet">עדיין אין ספקים שמורים — הספק הראשון יוקלד למטה, ומאז יופיע כאן ללחיצה.</div>';
+    return;
+  }
+  const current = document.getElementById('supplierInput').value.trim();
+  wrap.innerHTML = names.map(n => `
+    <button type="button" class="chip${n === current ? ' active' : ''}" data-chip="${escapeHtml(n)}">${escapeHtml(n)}</button>
+  `).join('');
+}
+
+function escapeHtml(s){
+  return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2000);
+}
+
+function showDebug(label, err){
+  const banner = document.getElementById('debugBanner');
+  const msg = err ? (err.message || err.toString ? err.toString() : JSON.stringify(err)) : '(no error object, call just returned falsy)';
+  banner.textContent = label + ':\n' + msg;
+  banner.style.display = 'block';
+}
+
+async function saveInvoice(){
+  const supplier = document.getElementById('supplierInput').value.trim();
+  const amount = parseFloat(document.getElementById('amountInput').value) || 0;
+  const date = document.getElementById('dateInput').value || new Date().toISOString().slice(0,10);
+  const month = date.slice(0,7);
+  if(!pendingPhoto || !supplier) return;
+  const review = autoReview; autoReview = false;
+  const editing = editingId;
+  const id = editing || uid();
+
+  document.getElementById('saveBtn').disabled = true;
+  document.getElementById('saveBtn').textContent = 'שומר...';
+
+  let dbOk = true;
+  if(!editing){
+    // Keep the full image in memory regardless of what happens with the DB write below
+    fullImages[id] = pendingPhoto.full;
+    try{
+      await idbSet('invoice-img:' + id, pendingPhoto.full);
+    }catch(err){
+      console.error('invoice image DB save failed:', err);
+      showDebug('שמירת תמונה במאגר המקומי נכשלה (הנתונים עדיין בזיכרון הפעיל)', err);
+      dbOk = false;
+    }
+    index.push({id, month, supplier, amount, date, thumb: pendingPhoto.thumb, review});
+  }else{
+    const it = index.find(i => i.id === id);
+    if(it){ it.supplier = supplier; it.amount = amount; it.date = date; it.month = month; it.review = false; }
+  }
+  try{
+    await saveIndex();
+  }catch(err){
+    console.error('invoice index DB save failed:', err);
+    showDebug('שמירת האינדקס במאגר המקומי נכשלה (הנתונים עדיין בזיכרון הפעיל)', err);
+    dbOk = false;
+  }
+
+  currentMonth = month;
+  closeModal();
+  render();
+  showToast(dbOk ? (editing ? 'עודכן ✓' : 'נשמר בתיק של ' + supplier + ' · ₪' + amount) : 'נשמר לזיכרון הפעיל — מומלץ לייצא גיבוי (⬇️) לפני סגירת הדף');
+
+  if(photoQueue.length > 0){
+    const next = photoQueue.shift();
+    setTimeout(() => { openModal(); handlePhotoFile(next); }, 200);
+  }
+}
+
+async function deleteInvoice(id){
+  index = index.filter(i => i.id !== id);
+  delete fullImages[id];
+  await saveIndex();
+  try{ await idbDelete('invoice-img:' + id); }catch(e){ console.error(e); }
+  render();
+}
+
+function render(){
+  document.getElementById('monthLabel').textContent = monthLabel(currentMonth);
+  const monthItems = index.filter(i => i.month === currentMonth);
+
+  const grand = monthItems.reduce((s,i)=>s+i.amount, 0);
+  document.getElementById('grandTotal').textContent = fmtMoney(grand);
+  document.getElementById('grandCount').textContent = monthItems.length + (monthItems.length===1 ? ' חשבונית' : ' חשבוניות');
+
+  document.getElementById('closeMonthBtn').disabled = monthItems.length === 0;
+
+  const content = document.getElementById('content');
+  if(monthItems.length === 0){
+    content.innerHTML = `<div class="empty-state"><div class="stamp-font">אין עדיין חשבוניות לחודש זה</div><div>לחצו על "חשבונית חדשה" כדי להתחיל לתייק</div></div>`;
+    return;
+  }
+
+  const bySupplier = {};
+  monthItems.forEach(i => {
+    if(!bySupplier[i.supplier]) bySupplier[i.supplier] = [];
+    bySupplier[i.supplier].push(i);
+  });
+
+  const suppliers = Object.keys(bySupplier).sort((a,b)=>{
+    const sa = bySupplier[a].reduce((s,i)=>s+i.amount,0);
+    const sb = bySupplier[b].reduce((s,i)=>s+i.amount,0);
+    return sb - sa;
+  });
+
+  content.innerHTML = suppliers.map((sup, idx) => {
+    const items = bySupplier[sup].sort((a,b)=> b.date.localeCompare(a.date));
+    const subtotal = items.reduce((s,i)=>s+i.amount, 0);
+    const cards = items.map(i => `
+      <div class="inv-card" data-id="${i.id}">
+        <img class="inv-thumb" src="${i.thumb}" alt="חשבונית">
+        <div class="inv-info">
+          <div class="inv-amount">${fmtMoney(i.amount)}</div>
+          <div class="inv-date">${i.date}${i.review ? ' <span class="badge-review">⚠️ סכום לבדיקה</span>' : ''}</div>
+        </div>
+        <button type="button" class="inv-del" data-edit="${i.id}" aria-label="ערוך" style="color:var(--ink)">✏️</button>
+        <button type="button" class="inv-del" data-del="${i.id}" aria-label="מחק">🗑️</button>
+        <div class="inv-confirm" data-confirm-for="${i.id}" style="display:none;">
+          <span>למחוק?</span>
+          <button type="button" class="confirm-yes" data-yes="${i.id}">כן, מחק</button>
+          <button type="button" class="confirm-no" data-no="${i.id}">ביטול</button>
+        </div>
+      </div>
+    `).join('');
+    return `
+      <details class="folder" ${idx===0 ? 'open' : ''}>
+        <summary>
+          <span class="folder-name">📁 ${escapeHtml(sup)} <small style="font-family:Assistant;font-size:12px;opacity:.75">(${items.length})</small></span>
+          <span class="folder-meta">
+            <span class="folder-sub">${fmtMoney(subtotal)}</span>
+            <span class="chev">▾</span>
+          </span>
+        </summary>
+        <div class="invoice-list">${cards}</div>
+      </details>
+    `;
+  }).join('');
+
+}
+
+async function closeMonth(){
+  const monthItems = index.filter(i => i.month === currentMonth);
+  if(monthItems.length === 0) return;
+
+  const btn = document.getElementById('closeMonthBtn');
+  btn.disabled = true;
+  const originalText = btn.textContent;
+  btn.textContent = 'מכין קובץ...';
+
+  try{
+    const zip = new JSZip();
+    const bySupplier = {};
+    monthItems.forEach(i => {
+      if(!bySupplier[i.supplier]) bySupplier[i.supplier] = [];
+      bySupplier[i.supplier].push(i);
+    });
+
+    let summary = `פנקס העסק — סיכום חודש ${monthLabel(currentMonth)}\n`;
+    summary += `${'='.repeat(40)}\n\n`;
+    let grand = 0;
+
+    for(const sup of Object.keys(bySupplier).sort()){
+      const items = bySupplier[sup].sort((a,b)=>a.date.localeCompare(b.date));
+      const subtotal = items.reduce((s,i)=>s+i.amount,0);
+      grand += subtotal;
+      const folder = zip.folder(sanitizeFilename(sup));
+      summary += `ספק: ${sup}\n`;
+      for(const item of items){
+        let dataUrl = fullImages[item.id];
+        if(!dataUrl){
+          try{ dataUrl = await idbGet('invoice-img:' + item.id); }catch(e){ /* ignore */ }
+        }
+        if(!dataUrl) dataUrl = item.thumb; // last resort so the invoice is never missing entirely
+        if(dataUrl){
+          const base64 = dataUrl.split(',')[1];
+          folder.file(`${item.date}_${item.amount}_${item.id.slice(-4)}.jpg`, base64, {base64:true});
+        }
+        summary += `  ${item.date}  —  ₪${item.amount.toLocaleString('he-IL')}\n`;
+      }
+      summary += `  סה"כ ${sup}: ₪${subtotal.toLocaleString('he-IL')}\n\n`;
+    }
+    summary += `${'='.repeat(40)}\n`;
+    summary += `סה"כ כללי לחודש: ₪${grand.toLocaleString('he-IL')}\n`;
+    summary += `מספר חשבוניות: ${monthItems.length}\n`;
+
+    zip.file('סיכום.txt', summary);
+
+    const filename = `חשבוניות-${currentMonth}.zip`;
+    const blob = await zip.generateAsync({type:'blob'});
+    const emailSubject = `חשבוניות ${monthLabel(currentMonth)} — ${monthItems.length} חשבוניות, סה"כ ₪${grand.toLocaleString('he-IL')}`;
+
+    let shared = false;
+    try{
+      const file = new File([blob], filename, {type: 'application/zip'});
+      if(navigator.canShare && navigator.canShare({files: [file]})){
+        await navigator.share({
+          files: [file],
+          title: emailSubject,
+          text: summary
+        });
+        shared = true;
+        showToast('נשלח לבחירתך (כולל מייל) ✓');
+      }
+    }catch(shareErr){
+      if(shareErr && shareErr.name === 'AbortError'){
+        // user cancelled the share sheet — don't also force a download
+        shared = true;
+      }else{
+        console.error('share failed, falling back to download:', shareErr);
+      }
+    }
+
+    if(!shared){
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      const mailBody = encodeURIComponent(summary + '\n\n(קובץ ה-ZIP עם התמונות ירד למכשיר — יש לצרף אותו ידנית להודעה)');
+      const mailTo = settings.bookkeeperEmail || '';
+      window.location.href = `mailto:${encodeURIComponent(mailTo)}?subject=${encodeURIComponent(emailSubject)}&body=${mailBody}`;
+
+      showToast(mailTo ? 'הקובץ ירד — נפתחת הודעת מייל, צרפו את הקובץ שהורד' : 'הקובץ ירד. אפשר להגדיר אימייל קבוע בהגדרות ⚙️');
+    }
+  }catch(e){
+    showToast('שגיאה בהכנת הקובץ');
+    console.error(e);
+  }finally{
+    btn.disabled = false;
+    btn.textContent = originalText;
+  }
+}
+
+function sanitizeFilename(s){
+  return s.replace(/[\\/:*?"<>|]/g, '_');
+}
+
+async function exportBackup(){
+  const btn = document.getElementById('backupExportBtn');
+  const original = btn.textContent;
+  btn.textContent = 'מכין גיבוי...';
+  btn.disabled = true;
+  try{
+    const images = {};
+    for(const item of index){
+      let dataUrl = fullImages[item.id];
+      if(!dataUrl){
+        try{ dataUrl = await idbGet('invoice-img:' + item.id); }catch(e){ /* ignore */ }
+      }
+      images[item.id] = dataUrl || item.thumb;
+    }
+    const payload = {version: 1, exportedAt: new Date().toISOString(), index, images};
+    const blob = new Blob([JSON.stringify(payload)], {type: 'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `פנקס-העסק-גיבוי-${new Date().toISOString().slice(0,10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast('הגיבוי הורד בהצלחה — שמור אותו במקום בטוח');
+  }catch(e){
+    console.error(e);
+    showToast('שגיאה בהכנת הגיבוי');
+  }finally{
+    btn.textContent = original;
+    btn.disabled = false;
+  }
+}
+
+async function importBackup(file){
+  if(!file) return;
+  try{
+    const text = await file.text();
+    const payload = JSON.parse(text);
+    if(!payload || !Array.isArray(payload.index)) throw new Error('קובץ לא תקין');
+
+    const existingIds = new Set(index.map(i => i.id));
+    let added = 0;
+    for(const item of payload.index){
+      if(existingIds.has(item.id)) continue;
+      index.push(item);
+      added++;
+      const img = payload.images ? payload.images[item.id] : null;
+      if(img){
+        fullImages[item.id] = img;
+        try{ await idbSet('invoice-img:' + item.id, img); }catch(e){ console.error(e); }
+      }
+    }
+    await saveIndex();
+    render();
+    showToast(`שוחזרו ${added} חשבוניות מהגיבוי`);
+  }catch(e){
+    console.error(e);
+    showToast('שגיאה בקריאת קובץ הגיבוי');
+  }
+}
+
+
+// ---------- In-app camera (high resolution) with fallback to the OS camera picker ----------
+let camStream = null;
+async function openCamera(){
+  try{
+    if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw new Error('no getUserMedia');
+    camStream = await navigator.mediaDevices.getUserMedia({
+      video: {facingMode: {ideal: 'environment'}, width: {ideal: 4096}, height: {ideal: 3072}},
+      audio: false
+    });
+    const v = document.getElementById('camVideo');
+    v.srcObject = camStream;
+    document.getElementById('camOverlay').classList.add('open');
+    try{ await v.play(); }catch(e){}
+  }catch(err){
+    console.warn('live camera unavailable, using file picker instead:', err);
+    showToast('המצלמה הישירה חסומה בתצוגה הזו — בחרו "צלם תמונה" בתפריט, או צלמו באפליקציית המצלמה ובחרו מהגלריה');
+    document.getElementById('cameraInput').click();
+  }
+}
+function closeCamera(){
+  if(camStream){ camStream.getTracks().forEach(t=>t.stop()); camStream = null; }
+  document.getElementById('camVideo').srcObject = null;
+  document.getElementById('camOverlay').classList.remove('open');
+}
+function shootCamera(){
+  const v = document.getElementById('camVideo');
+  if(!v.videoWidth) return;
+  const c = document.createElement('canvas');
+  c.width = v.videoWidth; c.height = v.videoHeight;
+  c.getContext('2d').drawImage(v, 0, 0);
+  c.toBlob(blob => {
+    closeCamera();
+    if(blob) handlePhotoFile(new File([blob], 'scan.jpg', {type:'image/jpeg'}));
+  }, 'image/jpeg', 0.95);
+}
+
+async function openEdit(id){
+  const it = index.find(i => i.id === id);
+  if(!it) return;
+  let full = fullImages[id];
+  if(!full){ try{ full = await idbGet('invoice-img:' + id); }catch(e){} }
+  openModal();
+  editingId = id;
+  document.getElementById('modalTitle').textContent = 'עריכת חשבונית';
+  pendingPhoto = {thumb: it.thumb, full: full || it.thumb};
+  document.getElementById('previewImg').src = pendingPhoto.full;
+  document.getElementById('previewWrap').style.display = 'block';
+  document.getElementById('supplierInput').value = it.supplier;
+  document.getElementById('amountInput').value = it.amount;
+  document.getElementById('dateInput').value = it.date;
+  userEditedSupplier = true;
+  renderSupplierChips();
+  validateSave();
+}
+
+function shiftMonth(delta){
+  const [y,m] = currentMonth.split('-').map(Number);
+  const d = new Date(y, m-1+delta, 1);
+  currentMonth = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+  render();
+}
+
+// wiring
+document.getElementById('prevMonth').addEventListener('click', ()=>shiftMonth(-1));
+document.getElementById('nextMonth').addEventListener('click', ()=>shiftMonth(1));
+document.getElementById('openAddBtn').addEventListener('click', openModal);
+document.getElementById('cancelBtn').addEventListener('click', ()=>{ photoQueue = []; closeModal(); });
+document.getElementById('modalBackdrop').addEventListener('click', (e)=>{ if(e.target.id==='modalBackdrop'){ photoQueue = []; closeModal(); } });
+document.getElementById('captureBtn').addEventListener('click', openCamera);
+document.getElementById('camShutter').addEventListener('click', shootCamera);
+document.getElementById('camClose').addEventListener('click', closeCamera);
+document.getElementById('scanToggle').addEventListener('click', (e)=>{ const b=e.target.closest('[data-mode]'); if(!b||!scanState) return; scanState.mode=b.getAttribute('data-mode'); applyScanMode(); });
+document.getElementById('uploadBtn').addEventListener('click', ()=>document.getElementById('galleryInput').click());
+document.getElementById('cameraInput').addEventListener('change', (e)=>handlePhotoFile(e.target.files[0]));
+document.getElementById('galleryInput').addEventListener('change', (e)=>{
+  const files = Array.from(e.target.files || []);
+  e.target.value = ''; // allow re-selecting the same file(s) again later
+  if(files.length === 0) return;
+  photoQueue = files.slice(1);
+  updateQueueHint();
+  handlePhotoFile(files[0]);
+});
+document.getElementById('supplierInput').addEventListener('input', ()=>{ userEditedSupplier = true; validateSave(); renderSupplierChips(); });
+document.getElementById('supplierChips').addEventListener('click', (e)=>{
+  const chip = e.target.closest('[data-chip]');
+  if(!chip) return;
+  const name = chip.getAttribute('data-chip');
+  document.getElementById('supplierInput').value = name;
+  userEditedSupplier = true;
+  validateSave();
+  renderSupplierChips();
+});
+document.getElementById('amountInput').addEventListener('input', validateSave);
+document.getElementById('saveBtn').addEventListener('click', saveInvoice);
+document.getElementById('content').addEventListener('click', (e) => {
+  const editBtn = e.target.closest('[data-edit]');
+  if(editBtn){ e.preventDefault(); openEdit(editBtn.getAttribute('data-edit')); return; }
+  const delBtn = e.target.closest('[data-del]');
+  if(delBtn){
+    e.preventDefault();
+    const id = delBtn.getAttribute('data-del');
+    const card = delBtn.closest('.inv-card');
+    const row = card ? card.querySelector('[data-confirm-for]') : null;
+    if(row) row.style.display = 'flex';
+    delBtn.style.display = 'none';
+    return;
+  }
+  const noBtn = e.target.closest('[data-no]');
+  if(noBtn){
+    e.preventDefault();
+    const card = noBtn.closest('.inv-card');
+    if(card){
+      card.querySelector('[data-confirm-for]').style.display = 'none';
+      card.querySelector('[data-del]').style.display = '';
+    }
+    return;
+  }
+  const yesBtn = e.target.closest('[data-yes]');
+  if(yesBtn){
+    e.preventDefault();
+    deleteInvoice(yesBtn.getAttribute('data-yes'));
+    return;
+  }
+});
+
+document.getElementById('settingsBtn').addEventListener('click', ()=>{
+  document.getElementById('bookkeeperEmailInput').value = settings.bookkeeperEmail || '';
+  document.getElementById('settingsBackdrop').classList.add('open');
+});
+document.getElementById('settingsCancelBtn').addEventListener('click', ()=>{
+  document.getElementById('settingsBackdrop').classList.remove('open');
+});
+document.getElementById('settingsBackdrop').addEventListener('click', (e)=>{
+  if(e.target.id === 'settingsBackdrop') document.getElementById('settingsBackdrop').classList.remove('open');
+});
+document.getElementById('settingsSaveBtn').addEventListener('click', async ()=>{
+  settings.bookkeeperEmail = document.getElementById('bookkeeperEmailInput').value.trim();
+  await saveSettings();
+  document.getElementById('settingsBackdrop').classList.remove('open');
+  showToast('ההגדרות נשמרו');
+});
+
+document.getElementById('closeMonthBtn').addEventListener('click', closeMonth);
+document.getElementById('backupExportBtn').addEventListener('click', exportBackup);
+document.getElementById('backupImportBtn').addEventListener('click', ()=>document.getElementById('backupImportInput').click());
+document.getElementById('backupImportInput').addEventListener('change', (e)=>importBackup(e.target.files[0]));
+
+(async function init(){
+  await loadIndex();
+  await loadSettings();
+  try{
+    await idbSet('__selftest__', 'ok');
+    await idbGet('__selftest__');
+  }catch(err){
+    showDebug('האחסון המקומי בדפדפן לא זמין כרגע — מומלץ לייצא גיבוי (⬇️) אחרי כל הוספה, עד שהבעיה תיפתר', err);
+  }
+  render();
+})();
+</script>
+</body>
+</html>
